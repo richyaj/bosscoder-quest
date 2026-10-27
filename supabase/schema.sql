@@ -11,3 +11,6 @@ create policy "own row only" on public.app_state
   for all to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Newer Supabase projects do not auto-grant API access to new tables.
+grant select, insert, update, delete on public.app_state to authenticated;

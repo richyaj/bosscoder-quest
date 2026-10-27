@@ -174,7 +174,7 @@ S=S||{goal:60,sessions:[],logs:[],ledger:[],awarded:{},rewards:[
 const save=()=>{S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){};pushSoon()};
 
 // ---- Supabase sync (fill these in; the anon key is public by design, row-level security protects the data) ----
-const SB_URL='', SB_KEY='';
+const SB_URL='https://gkxkirdecxmyhbplfffx.supabase.co', SB_KEY='sb_publishable_fU3wWy1DOMEGUwCVlRtZ5g_tlvxYWf3';
 let sb=null,user=null,pushT;
 const setSync=t=>{$('syncPill').textContent=t};
 function pushSoon(){if(!user)return;clearTimeout(pushT);pushT=setTimeout(push,800)}
