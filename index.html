@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSA Quest</title>
+<style>
+  :root{--bg:#0f1220;--card:#181c30;--card2:#20253f;--text:#e8eaf6;--mut:#8b91b5;--acc:#7c5cff;--gold:#ffc83d;--ok:#3ddc97;--bad:#ff5d73;--bd:#2b3156}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+  header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--bg);z-index:5}
+  h1{margin:0;font-size:20px} h2{margin:0 0 10px;font-size:16px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:6px 14px;font-weight:600}
+  .pill b{color:var(--gold)}
+  main{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;padding:16px 20px;max-width:1300px;margin:auto}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px}
+  .wide{grid-column:1/-1}
+  input,select,textarea,button{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+  textarea{width:100%;resize:vertical} input[type=number]{width:90px}
+  button{cursor:pointer} button:hover{border-color:var(--acc)}
+  button.pri{background:var(--acc);border-color:var(--acc);font-weight:600}
+  button.sm{padding:3px 8px;font-size:13px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .bar{height:12px;background:var(--card2);border-radius:99px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+  .mut{color:var(--mut);font-size:13px}
+  .list{max-height:460px;overflow:auto}
+  .sess{display:flex;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--bd)}
+  .sess.done .t{text-decoration:line-through;color:var(--mut)}
+  .sess .t{flex:1} .sess a{color:var(--acc)}
+  .timer{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;margin:6px 0}
+  .chart{display:flex;gap:4px;align-items:flex-end;height:90px}
+  .chart div{flex:1;background:var(--card2);border-radius:4px 4px 0 0;position:relative;min-height:2px}
+  .chart div.hit{background:var(--ok)} .chart div.part{background:var(--acc)}
+  .log{padding:6px 0;border-bottom:1px solid var(--bd);font-size:14px}
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+  @media(max-width:700px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}}
+  .ring{--p:0;width:160px;height:160px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--card2) 0)}
+  .ring span{width:124px;height:124px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:34px;font-weight:800}
+  .big{font-size:22px;font-weight:700}
+  .map{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+  .tile{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--card2);color:var(--mut);cursor:default}
+  .tile.d{background:var(--ok);color:#06281a} .tile.c{background:var(--acc);color:#fff;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #7c5cff88}50%{box-shadow:0 0 0 6px #7c5cff00}}
+  .quest{margin-top:14px;padding:12px 14px;border:1px solid var(--acc);border-radius:12px;background:var(--card2);text-align:left}
+  .lock{opacity:.45}
+  .trophy{padding:10px 0;border-bottom:1px solid var(--bd)}
+  .trophy .n{color:var(--mut);font-size:14px;margin:4px 0 0 18px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#222;font-weight:700;padding:10px 18px;border-radius:99px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚔️ DSA Quest</h1>
+  <div class="stats">
+    <span class="pill">Level <b id="lvl">1</b></span>
+    <span class="pill">🪙 <b id="bal">0</b> pts</span>
+    <span class="pill">🔥 <b id="streak">0</b>-day streak</span>
+    <span class="pill" id="syncPill"></span>
+    <button id="signOut" style="display:none">Sign out</button>
+  </div>
+</header>
+<main>
+  <section class="card wide" id="authCard" style="display:none">
+    <h2>☁️ Sign in to sync across devices</h2>
+    <div class="row">
+      <input id="aEmail" type="email" placeholder="email" autocomplete="username">
+      <input id="aPass" type="password" placeholder="password (this app's, not Bosscoder's)" autocomplete="current-password">
+      <button class="pri" id="aIn">Sign in</button>
+      <button id="aUp">Create account</button>
+    </div>
+    <div class="mut" id="aMsg"></div>
+  </section>
+  <section class="card wide hero">
+    <div class="ring" id="ring"><span id="ringTxt">0%</span></div>
+    <div>
+      <div class="big" id="heroLine"></div>
+      <div class="mut" id="heroSub"></div>
+      <div class="map" id="map"></div>
+      <div class="quest" id="quest"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Today</h2>
+    <div class="row">Daily goal <input type="number" id="goal" min="5" step="5"> min
+      <span class="mut" id="todayTxt"></span></div>
+    <div class="bar"><i id="todayBar"></i></div>
+    <div class="timer" id="timer">00:00</div>
+    <div class="row">
+      <select id="timerSess" style="flex:1;min-width:0"></select>
+      <button class="pri" id="tStart">Start</button>
+      <button id="tStop">Stop &amp; log</button>
+    </div>
+    <h2 style="margin-top:16px">Log time manually</h2>
+    <div class="row">
+      <select id="logSess" style="flex:1;min-width:0"></select>
+      <input type="number" id="logMin" placeholder="min" min="1">
+    </div>
+    <textarea id="logNote" rows="2" placeholder="What did I learn? (e.g. two pointers: sorted array pair sum, O(n))"></textarea>
+    <div class="row"><button class="pri" id="logBtn">Add log</button>
+      <label class="mut"><input type="checkbox" id="logDone"> mark session completed</label></div>
+    <div class="mut">Points: 1/min · +50 daily goal · +100 session completed · +10×streak day bonus (max 100)</div>
+  </section>
+
+  <section class="card">
+    <h2>Catch-up progress</h2>
+    <div class="mut" id="catchTxt"></div>
+    <div class="bar"><i id="catchBar"></i></div>
+    <p class="mut" id="eta"></p>
+    <h2 style="margin-top:16px">Last 14 days (min)</h2>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <section class="card">
+    <h2>🎁 Rewards</h2>
+    <div class="row">
+      <input id="rName" placeholder="Reward (e.g. 1hr gaming)" style="flex:1;min-width:0">
+      <input type="number" id="rCost" placeholder="cost" min="1">
+      <button id="rAdd">Add</button>
+    </div>
+    <div id="rewards"></div>
+  </section>
+
+  <section class="card wide">
+    <h2>📚 Sessions <span class="mut" id="sessCount"></span></h2>
+    <div class="row">
+      <select id="filter"><option value="all">All</option><option value="todo">To do</option><option value="done">Done</option></select>
+      <button id="toggleImport">Bulk import / add</button>
+      <button id="bossBtn">Load my Bosscoder classes</button>
+      <button id="starter">Load starter DSA topics</button>
+    </div>
+    <div id="importBox" style="display:none">
+      <p class="mut">One session per line: <code>Title | minutes | link (optional)</code>. Copy titles/durations from the Bosscoder recordings page and paste here.</p>
+      <textarea id="importTxt" rows="6" placeholder="Arrays 1 - Intro | 90 | https://...&#10;Binary Search | 120"></textarea>
+      <div class="row"><button class="pri" id="importBtn">Import</button></div>
+    </div>
+    <div class="list" id="sessions"></div>
+  </section>
+
+  <section class="card wide">
+    <h2>🏆 Completed sessions <span class="mut" id="trophyCount"></span></h2>
+    <div class="list" id="trophies"></div>
+  </section>
+
+  <section class="card wide">
+    <h2>📝 Learning log</h2>
+    <div class="list" id="logs"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="exp">Export backup</button>
+      <button id="imp">Import backup</button>
+      <input type="file" id="impFile" accept=".json" style="display:none">
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const KEY='dsaQuest.v1';
+const $=id=>document.getElementById(id);
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+S=S||{goal:60,sessions:[],logs:[],ledger:[],awarded:{},rewards:[
+  {id:uid(),name:'Watch an episode',cost:60},{id:uid(),name:'Favourite snack',cost:100},{id:uid(),name:'Gaming hour',cost:200}],timer:null};
+const save=()=>{S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){};pushSoon()};
+
+// ---- Supabase sync (fill these in; the anon key is public by design, row-level security protects the data) ----
+const SB_URL='', SB_KEY='';
+let sb=null,user=null,pushT;
+const setSync=t=>{$('syncPill').textContent=t};
+function pushSoon(){if(!user)return;clearTimeout(pushT);pushT=setTimeout(push,800)}
+async function push(){
+  if(!user)return;
+  const {error}=await sb.from('app_state').upsert({user_id:user.id,data:S,updated_at:new Date().toISOString()});
+  setSync(error?'⚠️ sync failed':'☁️ synced');
+}
+function renderAuth(){
+  $('authCard').style.display=sb&&!user?'block':'none';
+  $('signOut').style.display=user?'inline-block':'none';
+  setSync(!sb?'💾 this device only':user?'☁️ syncing…':'🔒 signed out');
+}
+async function onAuth(session){
+  user=session?session.user:null;renderAuth();
+  if(!user)return;
+  const {data,error}=await sb.from('app_state').select('data').maybeSingle();
+  if(error)return setSync('⚠️ '+error.message);
+  if(data&&data.data&&(data.data.updated||0)>(S.updated||0)){
+    S=data.data;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+    render();if(S.timer)startTick();toast('Synced from cloud');setSync('☁️ synced');
+  }else{
+    if(!S.sessions.length)loadBoss();else push();
+  }
+}
+async function initSync(){
+  renderAuth();
+  if(!SB_URL||!SB_KEY||!window.supabase){if(!S.sessions.length)loadBoss();return}
+  sb=window.supabase.createClient(SB_URL,SB_KEY);
+  sb.auth.onAuthStateChange((_e,s)=>{const id=s&&s.user.id;if(id!==(user&&user.id))onAuth(s)});
+  const {data}=await sb.auth.getSession();
+  await onAuth(data.session);
+}
+async function authGo(signup){
+  const email=$('aEmail').value.trim(),password=$('aPass').value;
+  if(!email||password.length<6)return $('aMsg').textContent='Enter email and a password (6+ chars).';
+  $('aMsg').textContent='…';
+  const r=signup?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+  $('aMsg').textContent=r.error?r.error.message:(signup&&!r.data.session?'Check your email to confirm, then sign in.':'');
+}
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
+const minsOn=d=>S.logs.filter(l=>l.date===d).reduce((a,l)=>a+l.min,0);
+const balance=()=>S.ledger.reduce((a,e)=>a+e.pts,0);
+const earned=()=>S.ledger.filter(e=>e.pts>0).reduce((a,e)=>a+e.pts,0);
+function streak(){let d=today(),n=0;if(!S.awarded[d])d=addDays(d,-1);while(S.awarded[d]){n++;d=addDays(d,-1)}return n}
+const level=()=>Math.floor(Math.sqrt(earned()/100))+1;
+
+function award(pts,why){S.ledger.push({t:Date.now(),pts,why});toast((pts>0?'+':'')+pts+' pts · '+why)}
+
+function addLog(sessId,min,note,done){
+  min=Math.round(min);if(!(min>0))return toast('Enter minutes');
+  const date=today();
+  S.logs.unshift({id:uid(),date,sessId,min,note:note||''});
+  award(min,'studied '+min+' min');
+  if(!S.awarded[date]&&minsOn(date)>=S.goal){
+    S.awarded[date]=true;
+    const st=streak();
+    award(50+Math.min(100,10*(st-1)),'daily goal hit'+(st>1?' · '+st+'-day streak':''));
+  }
+  const s=S.sessions.find(x=>x.id===sessId);
+  if(s){s.spent=(s.spent||0)+min}
+  save();
+  if(s&&done)completeSess(s.id);else render();
+}
+
+const cur=()=>S.sessions.find(s=>!s.done);
+const lastDone=()=>{for(let i=S.sessions.length-1;i>=0;i--)if(S.sessions[i].done)return S.sessions[i]};
+function sessOptions(){const c=cur();return '<option value="">— general study —</option>'+(c?`<option value="${c.id}">${esc(c.title)}</option>`:'')}
+function completeSess(id){
+  const c=cur();if(!c||c.id!==id)return toast('Finish sessions in order 🔒');
+  c.done=true;c.doneOn=today();award(100,'session completed');save();render();
+}
+function undoSess(id){
+  const l=lastDone();if(!l||l.id!==id)return toast('Only the latest completed session can be undone');
+  l.done=false;delete l.doneOn;award(-100,'completion undone');save();render();
+}
+
+function render(){
+  $('lvl').textContent=level();$('bal').textContent=balance();$('streak').textContent=streak();
+  $('goal').value=S.goal;
+  const m=minsOn(today());
+  $('todayTxt').textContent=`${m} / ${S.goal} min`+(m>=S.goal?' ✅':'');
+  $('todayBar').style.width=Math.min(100,m/S.goal*100)+'%';
+
+  const keep=[$('timerSess').value,$('logSess').value];
+  $('timerSess').innerHTML=$('logSess').innerHTML=sessOptions();
+  $('timerSess').value=keep[0];$('logSess').value=keep[1];
+
+  // catch-up
+  const total=S.sessions.length,done=S.sessions.filter(s=>s.done).length;
+  const totMin=S.sessions.reduce((a,s)=>a+(s.dur||0),0);
+  const leftMin=S.sessions.filter(s=>!s.done).reduce((a,s)=>a+Math.max(0,(s.dur||0)-(s.spent||0)),0);
+  $('catchTxt').textContent=total?`${done}/${total} sessions done · ${Math.round(leftMin/60*10)/10} h of video left`:'Add your sessions below to start.';
+  $('catchBar').style.width=(total?done/total*100:0)+'%';
+  $('eta').textContent=total&&leftMin?`At ${S.goal} min/day you'd finish in ~${Math.ceil(leftMin/S.goal)} days (${addDays(today(),Math.ceil(leftMin/S.goal))}).`:'';
+
+  // chart
+  let h='';const days=[...Array(14)].map((_,i)=>addDays(today(),i-13));
+  const mx=Math.max(S.goal,...days.map(minsOn));
+  days.forEach(d=>{const v=minsOn(d);h+=`<div class="${v>=S.goal?'hit':v?'part':''}" style="height:${v/mx*100}%" title="${d}: ${v} min"></div>`});
+  $('chart').innerHTML=h;
+
+  // rewards
+  $('rewards').innerHTML=S.rewards.map(r=>`<div class="sess"><span class="t">${esc(r.name)}</span><b style="color:var(--gold)">${r.cost}</b>
+    <button class="sm pri" data-redeem="${r.id}" ${balance()<r.cost?'disabled':''}>Redeem</button>
+    <button class="sm" data-rdel="${r.id}">✕</button></div>`).join('')||'<p class="mut">No rewards yet.</p>';
+
+  // sessions
+  const f=$('filter').value;
+  const list=S.sessions.filter(s=>f==='all'||(f==='done')===!!s.done);
+  $('sessCount').textContent=`(${done}/${total})`;
+  const c=cur(),ld=lastDone();
+  $('sessions').innerHTML=list.map(s=>{
+    const idx=S.sessions.indexOf(s)+1,isCur=c&&c.id===s.id,locked=!s.done&&!isCur;
+    const act=s.done?(ld&&ld.id===s.id?`<button class="sm" data-undo="${s.id}">undo</button>`:'<span>✅</span>')
+      :isCur?`<button class="sm pri" data-complete="${s.id}">✓ Complete</button>`:'<span>🔒</span>';
+    return `<div class="sess ${s.done?'done':''} ${locked?'lock':''}">
+    <span class="mut" style="width:26px">${idx}</span>
+    <span class="t">${esc(s.title)} ${isCur?'<b style="color:var(--acc)">· CURRENT</b>':''} ${s.dur?`<span class="mut">· ${s.dur} min${s.spent?`, ${s.spent} spent`:''}</span>`:''}</span>
+    ${s.url&&!locked?`<a href="${esc(s.url)}" target="_blank" rel="noopener">▶ watch</a>`:''}
+    ${act}
+    <button class="sm" data-sdel="${s.id}">✕</button></div>`}).join('')||'<p class="mut">Nothing here.</p>';
+
+  // hero
+  const pct=total?Math.round(done/total*100):0;
+  $('ring').style.setProperty('--p',pct);$('ringTxt').textContent=pct+'%';
+  const spentAll=S.sessions.reduce((a,s)=>a+(s.spent||0),0);
+  $('heroLine').textContent=total?`${done} of ${total} sessions complete`:'No sessions yet';
+  $('heroSub').textContent=`${total-done} to go · ${Math.round(spentAll/60*10)/10} h studied here · ${S.logs.length} study logs`;
+  $('map').innerHTML=S.sessions.map((s,i)=>`<div class="tile ${s.done?'d':c&&c.id===s.id?'c':''}" title="${i+1}. ${esc(s.title)}">${s.done?'✓':i+1}</div>`).join('');
+  $('quest').innerHTML=c?`<div class="mut">CURRENT QUEST · ${S.sessions.indexOf(c)+1}/${total}</div>
+    <div class="big" style="font-size:18px">${esc(c.title)}</div>
+    <div class="mut">${c.spent||0} / ${c.dur||'?'} min watched</div>
+    <div class="bar" style="margin:8px 0"><i style="width:${c.dur?Math.min(100,(c.spent||0)/c.dur*100):0}%"></i></div>
+    <div class="row"><button class="pri" data-quick="${c.id}">▶ Start timer</button><button data-complete="${c.id}">✓ Mark complete (+100)</button></div>`
+    :(total?'<div class="big">🎉 All sessions complete!</div>':'Import your sessions to begin.');
+
+  // trophies
+  const dn=S.sessions.filter(s=>s.done);
+  $('trophyCount').textContent=`(${dn.length})`;
+  $('trophies').innerHTML=dn.slice().reverse().map(s=>{
+    const notes=S.logs.filter(l=>l.sessId===s.id&&l.note).map(l=>`<div class="n">• ${esc(l.note)}</div>`).join('');
+    return `<div class="trophy">✅ <b>${esc(s.title)}</b> <span class="mut">${s.spent?`· ${s.spent} min here`:'· attended live'}${s.doneOn?' · '+s.doneOn:''}</span>${notes}</div>`}).join('')||'<p class="mut">Complete your first session to see it here.</p>';
+
+  // logs
+  $('logs').innerHTML=S.logs.slice(0,100).map(l=>{const s=S.sessions.find(x=>x.id===l.sessId);
+    return `<div class="log"><span class="mut">${l.date}</span> · <b>${l.min} min</b> ${s?'· '+esc(s.title):''}${l.note?`<br>${esc(l.note)}`:''}</div>`}).join('')||'<p class="mut">No logs yet.</p>';
+}
+
+// timer
+let tick;
+function drawTimer(){
+  if(!S.timer){$('timer').textContent='00:00';return}
+  const s=Math.floor((Date.now()-S.timer.start)/1000);
+  $('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+function startTick(){clearInterval(tick);tick=setInterval(drawTimer,1000);drawTimer()}
+$('tStart').onclick=()=>{if(S.timer)return;S.timer={start:Date.now(),sessId:$('timerSess').value};save();startTick()};
+$('tStop').onclick=()=>{
+  if(!S.timer)return;
+  const min=(Date.now()-S.timer.start)/60000;const id=S.timer.sessId;
+  S.timer=null;clearInterval(tick);drawTimer();
+  addLog(id,Math.max(1,min),'',false);
+};
+
+$('logBtn').onclick=()=>{addLog($('logSess').value,+$('logMin').value,$('logNote').value,$('logDone').checked);
+  $('logMin').value=$('logNote').value='';$('logDone').checked=false};
+$('goal').onchange=e=>{S.goal=Math.max(5,+e.target.value||60);save();render()};
+$('filter').onchange=render;
+$('toggleImport').onclick=()=>{const b=$('importBox');b.style.display=b.style.display==='none'?'block':'none'};
+$('importBtn').onclick=()=>{
+  let n=0;
+  $('importTxt').value.split('\n').forEach(line=>{
+    const [t,d,u]=line.split('|').map(x=>x.trim());
+    if(t){S.sessions.push({id:uid(),title:t,dur:parseInt(d)||0,url:u||'',done:false,spent:0});n++}
+  });
+  $('importTxt').value='';save();render();toast(n+' sessions added');
+};
+$('starter').onclick=()=>{
+  if(S.sessions.length&&!confirm('Add starter topics to your existing list?'))return;
+  ['Time & Space Complexity','Arrays','Strings','Hashing','Two Pointers & Sliding Window','Prefix Sum','Binary Search','Sorting','Recursion & Backtracking','Linked List','Stack & Queue','Trees','Binary Search Trees','Heaps / Priority Queue','Graphs - BFS/DFS','Graphs - Shortest Path & Union Find','Dynamic Programming 1D','Dynamic Programming 2D','Greedy','Tries','Bit Manipulation']
+    .forEach(t=>S.sessions.push({id:uid(),title:t,dur:90,url:'',done:false,spent:0}));
+  save();render();
+};
+// Module 1 classes read from the Bosscoder curriculum page (oldest first). [title, date, attended]
+const BOSS=[['Orientation & Arrays and Maths','01/08',1],['Time Complexity & 1D - 2D Arrays','02/08',1],['IL : Arrays & Maths || 1D & 2D Arrays','06/08',1],['Maths 1 & Maths 2','08/08',1],['Bit Manipulation','09/08',1],['IL : Maths 1 & Maths 2','13/08',0],['Searching 1 & Searching 2','15/08',1],['Recursion 1 & Recursion 2','16/08',1],['IL: Searching','20/08',0],['Backtracking','22/08',1],['Sorting 1 & Sorting 2','23/08',0],['IL : Recursion & Backtracking','27/08',1],['2 Pointers','29/08',0],['Hashing 1 & Hashing 2','30/08',0],['IL : Sorting','03/09',0],['IL : 2 Pointers & Hashing','10/09',0],['Stacks and Queues','12/09',0],['Linked List 1 & Linked List 2','13/09',0],['IL : Stacks and Queues','17/09',0],['Trees 1 & BST Extended','19/09',0],['BBST & Trees 2','20/09',0],['Alumni Session','23/09',0],['IL : Linked List','24/09',0],['Tries','26/09',0],['Heaps 1 & Heaps 2','27/09',0],['IL : Trees 1 & BST','01/10',0],['Heaps Revision','03/10',0],['Greedy','04/10',0],['DP 1 & DP 2','10/10',0],['Graph 1','11/10',0],['IL : BBST & Trees 2','15/10',0],['IL : Tries & Heaps','17/10',0],['IL : Greedy','18/10',0],['IL : DP & Greedy','22/10',0]];
+function loadBoss(){
+  const have=new Set(S.sessions.map(s=>s.title));
+  BOSS.forEach(([t,d,p])=>{const title=t+' ('+d+')';if(!have.has(title))
+    S.sessions.push({id:uid(),title,dur:120,url:'https://platform.bosscoderacademy.com/platform/curriculum',done:!!p,spent:0})});
+  save();render();toast('Loaded '+BOSS.length+' classes');
+}
+$('bossBtn').onclick=loadBoss;
+$('aIn').onclick=()=>authGo(false);$('aUp').onclick=()=>authGo(true);
+$('signOut').onclick=()=>sb.auth.signOut();
+$('rAdd').onclick=()=>{const n=$('rName').value.trim(),c=+$('rCost').value;if(!n||!(c>0))return;
+  S.rewards.push({id:uid(),name:n,cost:c});$('rName').value=$('rCost').value='';save();render()};
+
+document.addEventListener('click',e=>{
+  const d=e.target.dataset;
+  if(d.redeem){const r=S.rewards.find(x=>x.id===d.redeem);if(r&&balance()>=r.cost){award(-r.cost,'redeemed: '+r.name);save();render();toast('Enjoy: '+r.name+' 🎉')}}
+  if(d.rdel){S.rewards=S.rewards.filter(x=>x.id!==d.rdel);save();render()}
+  if(d.sdel&&confirm('Remove this session?')){S.sessions=S.sessions.filter(x=>x.id!==d.sdel);save();render()}
+});
+document.addEventListener('click',e=>{
+  const d=e.target.dataset;
+  if(d.complete)completeSess(d.complete);
+  if(d.undo)undoSess(d.undo);
+  if(d.quick){$('timerSess').value=d.quick;$('tStart').click()}
+});
+
+$('exp').onclick=()=>{const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+  a.download='dsa-quest-'+today()+'.json';a.click()};
+$('imp').onclick=()=>$('impFile').click();
+$('impFile').onchange=e=>{const f=e.target.files[0];if(!f)return;
+  f.text().then(t=>{S=JSON.parse(t);save();render();toast('Backup restored')}).catch(()=>toast('Bad file'))};
+
+render();if(S.timer)startTick();
+initSync();
+</script>
+</body>
+</html>
