@@ -152,6 +152,7 @@
       <button id="exp">Export backup</button>
       <button id="imp">Import backup</button>
       <input type="file" id="impFile" accept=".json" style="display:none">
+      <button id="reset" style="margin-left:auto;border-color:var(--bad);color:var(--bad)">Reset all progress</button>
     </div>
   </section>
 </main>
@@ -364,7 +365,7 @@ const BOSS=[['Orientation & Arrays and Maths','01/08',1],['Time Complexity & 1D 
 function loadBoss(){
   const have=new Set(S.sessions.map(s=>s.title));
   BOSS.forEach(([t,d,p])=>{const title=t+' ('+d+')';if(!have.has(title))
-    S.sessions.push({id:uid(),title,dur:120,url:'https://platform.bosscoderacademy.com/platform/curriculum',done:!!p,spent:0})});
+    S.sessions.push({id:uid(),title,dur:120,url:'https://platform.bosscoderacademy.com/platform/curriculum',done:false,spent:0})});
   save();render();toast('Loaded '+BOSS.length+' classes');
 }
 $('bossBtn').onclick=loadBoss;
@@ -386,6 +387,12 @@ document.addEventListener('click',e=>{
   if(d.quick){$('timerSess').value=d.quick;$('tStart').click()}
 });
 
+$('reset').onclick=()=>{
+  if(!confirm('Reset ALL progress? This unticks every session and clears points, streak, logs and notes. Your session list, rewards and daily goal are kept. (Export a backup first if unsure.)'))return;
+  S.sessions.forEach(s=>{s.done=false;s.spent=0;delete s.doneOn});
+  S.logs=[];S.ledger=[];S.awarded={};S.timer=null;
+  clearInterval(tick);drawTimer();save();render();toast('Fresh start 🚀');
+};
 $('exp').onclick=()=>{const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
   a.download='dsa-quest-'+today()+'.json';a.click()};
